@@ -90,7 +90,7 @@ static int detect_language(const std::string& language) {
 }
 
 std::unique_ptr<middleware::runner> load_runner(const std::string& model_path) {
-    std::unique_ptr<middleware::runner> runner = std::make_unique<middleware::native_runner>();
+    std::unique_ptr<middleware::runner> runner = std::make_unique<middleware::runtime_runner>();
 
     if (!runner->init(CONFIG_FILE_DEFAULT, 0, 0)) {
         fprintf(stderr, "[ERROR] Init failed.\n");
@@ -250,6 +250,14 @@ int main(int argc, char** argv) {
         memcpy(continous_mel.data() + i * n_len, mel[i].data(), sizeof(float) * n_len);
     }
 
+    // fp = fopen("mel.bin", "wb");
+    // fwrite(continous_mel.data(), sizeof(float), continous_mel.size(), fp);
+    // fclose(fp);
+
+    // fp = fopen("../../whisper.axera/cpp/mel.bin", "rb");
+    // fread(continous_mel.data(), sizeof(float), continous_mel.size(), fp);
+    // fclose(fp);
+
     axclrtMemcpy(encoder->get_input_pointer(0), continous_mel.data(), sizeof(float) * continous_mel.size(), AXCL_MEMCPY_HOST_TO_DEVICE);
     if (!encoder->run(false)) {
         printf("encoder run failed!\n");
@@ -259,11 +267,11 @@ int main(int argc, char** argv) {
     axclrtMemcpy(n_layer_cross_v.data(), encoder->get_output_pointer(1), sizeof(float) * n_layer_cross_v.size(), AXCL_MEMCPY_DEVICE_TO_HOST);
 
     // fp = fopen("n_layer_cross_k.bin", "wb");
-    // fwrite(encoder_data.n_layer_cross_k.data(), sizeof(float), encoder_data.n_layer_cross_k.size(), fp);
+    // fwrite(n_layer_cross_k.data(), sizeof(float), n_layer_cross_k.size(), fp);
     // fclose(fp);
 
     // fp = fopen("n_layer_cross_v.bin", "wb");
-    // fwrite(encoder_data.n_layer_cross_v.data(), sizeof(float), encoder_data.n_layer_cross_v.size(), fp);
+    // fwrite(n_layer_cross_v.data(), sizeof(float), n_layer_cross_v.size(), fp);
     // fclose(fp);
 
     // detect language
@@ -304,7 +312,14 @@ int main(int argc, char** argv) {
     // fwrite(logits.data(), sizeof(float), logits.size(), fp);
     // fclose(fp);
     axclrtMemcpy(decoder_loop->get_input_pointer(1), n_layer_self_k_cache.data(), sizeof(float) * n_layer_self_k_cache.size(), AXCL_MEMCPY_HOST_TO_DEVICE);
-    axclrtMemcpy(decoder_loop->get_input_pointer(2), n_layer_self_k_cache.data(), sizeof(float) * n_layer_self_k_cache.size(), AXCL_MEMCPY_HOST_TO_DEVICE);
+    axclrtMemcpy(decoder_loop->get_input_pointer(2), n_layer_self_v_cache.data(), sizeof(float) * n_layer_self_v_cache.size(), AXCL_MEMCPY_HOST_TO_DEVICE);
+
+    // for (int i = 0; i < decoder_loop->get_input_count(); i++) {
+    //     printf("decoder_loop input[%d] name: %s size: %d\n", i, decoder_loop->get_input_name(i).c_str(), decoder_loop->get_input_size(i));
+    // }
+    // for (int i = 0; i < decoder_loop->get_output_count(); i++) {
+    //     printf("decoder_loop output[%d] name: %s size: %d\n", i, decoder_loop->get_output_name(i).c_str(), decoder_loop->get_output_size(i));
+    // }
 
     for (int i = 0; i < WHISPER_N_TEXT_CTX - SOT_SEQUENCE.size(); i++) {
         if (max_token_id == WHISPER_EOT) {
@@ -329,9 +344,8 @@ int main(int argc, char** argv) {
             printf("decoder_loop run failed!\n");
             return -1;
         } 
-
-        axclrtMemcpy(decoder_loop->get_input_pointer(1), n_layer_self_k_cache.data(), sizeof(float) * n_layer_self_k_cache.size(), AXCL_MEMCPY_HOST_TO_DEVICE);
-        axclrtMemcpy(decoder_loop->get_input_pointer(2), n_layer_self_k_cache.data(), sizeof(float) * n_layer_self_k_cache.size(), AXCL_MEMCPY_HOST_TO_DEVICE);
+        axclrtMemcpy(decoder_loop->get_input_pointer(1), decoder_loop->get_output_pointer(1), sizeof(float) * n_layer_self_k_cache.size(), AXCL_MEMCPY_DEVICE_TO_DEVICE);
+        axclrtMemcpy(decoder_loop->get_input_pointer(2), decoder_loop->get_output_pointer(2), sizeof(float) * n_layer_self_v_cache.size(), AXCL_MEMCPY_DEVICE_TO_DEVICE);
         // get logits output
         axclrtMemcpy(logits.data(), decoder_loop->get_output_pointer(0), sizeof(float) * logits.size(), AXCL_MEMCPY_DEVICE_TO_HOST);
 
@@ -344,14 +358,6 @@ int main(int argc, char** argv) {
 
         printf("Next Token: %d \t take %.2fms\n", max_token_id, (end - start) * 1000.f / CLOCKS_PER_SEC);
     }
-
-    // fp = fopen("n_layer_cross_k.bin", "wb");
-    // fwrite(encoder_data.n_layer_cross_k.data(), sizeof(float), encoder_data.n_layer_cross_k.size(), fp);
-    // fclose(fp);
-
-    // fp = fopen("n_layer_cross_v.bin", "wb");
-    // fwrite(encoder_data.n_layer_cross_v.data(), sizeof(float), encoder_data.n_layer_cross_v.size(), fp);
-    // fclose(fp);
 
     std::string s;
     for (const auto i : results) {
