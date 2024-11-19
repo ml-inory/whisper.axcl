@@ -6,11 +6,15 @@
 #include <fstream>
 #include <unordered_map>
 #include <ctime>
+#include <memory>
+#include <axcl.h>
 
 #include "cmdline.h"
 #include "AudioFile.h"
-#include "base64.h"
-#include "opencc.h"
+#include "utilities/base64.h"
+#include "opencc/opencc.h"
+#include "middleware/axcl_runtime_runner.hpp"
+#include "middleware/axcl_native_runner.hpp"
 
 #define WHISPER_SAMPLE_RATE 16000
 #define WHISPER_N_FFT       400
@@ -28,6 +32,8 @@
 #define WHISPER_VOCAB_SIZE  51865
 #define WHISPER_N_TEXT_CTX  448
 #define NEG_INF             -std::numeric_limits<float>::infinity()
+
+const char* CONFIG_FILE_DEFAULT = "/usr/local/axcl/axcl.json";
 
 static std::vector<int> WHISPER_LANG_CODES{
     50273,50303,50288,50261,50342,50299,50330,50302,50336,50267,50287,50292,50294,50323,50348,50291,50317,
@@ -83,6 +89,27 @@ static int detect_language(const std::string& language) {
     return WHISPER_LANG_CODES[i];
 }
 
+std::unique_ptr<middleware::runner> load_runner(const std::string& model_path) {
+    std::unique_ptr<middleware::runner> runner = std::make_unique<middleware::native_runner>();
+
+    if (!runner->init(CONFIG_FILE_DEFAULT, 0, 0)) {
+        fprintf(stderr, "[ERROR] Init failed.\n");
+        return nullptr;
+    }
+
+    if (!runner->load(model_path)) {
+        fprintf(stderr, "[ERROR] Loading model {%s} failed.\n", model_path.c_str());
+        return nullptr;
+    }
+
+    if (!runner->prepare(true, true, 0, 0)) {
+        fprintf(stderr, "[ERROR] Prepare for model {%s} failed.\n", model_path.c_str());
+        return nullptr;
+    }
+
+    return std::move(runner);
+}
+
 
 int main(int argc, char** argv) {
     cmdline::parser cmd;
@@ -112,27 +139,40 @@ int main(int argc, char** argv) {
     }
 
     int WHISPER_N_TEXT_STATE = WHISPER_N_TEXT_STATE_MAP[model_type];
-
-    int ret = AX_SYS_Init();
-    if (0 != ret) {
-        fprintf(stderr, "AX_SYS_Init failed! ret = 0x%x\n", ret);
-        return -1;
-    }
-
-    AX_ENGINE_NPU_ATTR_T npu_attr;
-    memset(&npu_attr, 0, sizeof(npu_attr));
-    npu_attr.eHardMode = static_cast<AX_ENGINE_NPU_MODE_T>(0);
-    ret = AX_ENGINE_Init(&npu_attr);
-    if (0 != ret) {
-        fprintf(stderr, "Init ax-engine failed{0x%8x}.\n", ret);
-        return -1;
-    }
+    clock_t start, end;
 
     printf("encoder: %s\n", encoder_file.c_str());
     printf("decoder_main: %s\n", decoder_main_file.c_str());
     printf("decoder_loop: %s\n", decoder_loop_file.c_str());
     printf("wav_file: %s\n", wav_file.c_str());
     printf("language: %s\n", language.c_str());
+
+    start = clock();
+    auto encoder = load_runner(encoder_file);
+    if (!encoder) {
+        printf("Load encoder failed!\n");
+        return -1;
+    }
+    end = clock();
+    printf("Load encoder take %.2f ms\n", (end - start) * 1000.f / CLOCKS_PER_SEC);
+
+    start = clock();
+    auto decoder_main = load_runner(decoder_main_file);
+    if (!decoder_main) {
+        printf("Load decoder_main failed!\n");
+        return -1;
+    }
+    end = clock();
+    printf("Load decoder_main take %.2f ms\n", (end - start) * 1000.f / CLOCKS_PER_SEC);
+
+    start = clock();
+    auto decoder_loop = load_runner(decoder_loop_file);
+    if (!decoder_loop) {
+        printf("Load decoder_loop failed!\n");
+        return -1;
+    }
+    end = clock();
+    printf("Load decoder_loop take %.2f ms\n", (end - start) * 1000.f / CLOCKS_PER_SEC);
 
     AudioFile<float> audio_file;
     if (!audio_file.load(wav_file)) {
@@ -190,44 +230,6 @@ int main(int argc, char** argv) {
 
     n_len = mel[0].size();
 
-    // fp = fopen("../mel.bin", "rb");
-    // for (size_t i = 0; i < mel.size(); i++) {
-    //     fread(mel[i].data(), sizeof(float), mel[i].size(), fp);
-    // }
-    // fclose(fp);
-
-    Encoder encoder;
-    DecoderMain decoder_main;
-    DecoderLoop decoder_loop;
-    clock_t start, end;
-
-    start = clock();
-    ret = encoder.Init(encoder_file.c_str());
-    if (ret) {
-        printf("encoder init failed!\n");
-        return ret;
-    }
-    end = clock();
-    printf("Load encoder take %.2f ms\n", (end - start) * 1000.f / CLOCKS_PER_SEC);
-
-    start = clock();
-    ret = decoder_main.Init(decoder_main_file.c_str());
-    if (ret) {
-        printf("decoder_main init failed!\n");
-        return ret;
-    }
-    end = clock();
-    printf("Load decoder_main take %.2f ms\n", (end - start) * 1000.f / CLOCKS_PER_SEC);
-
-    start = clock();
-    ret = decoder_loop.Init(decoder_loop_file.c_str());
-    if (ret) {
-        printf("decoder_loop init failed!\n");
-        return ret;
-    }
-    end = clock();
-    printf("Load decoder_loop take %.2f ms\n", (end - start) * 1000.f / CLOCKS_PER_SEC);
-
     int offset = 0;
     std::vector<float> logits(WHISPER_VOCAB_SIZE);
     int max_token_id = -1;
@@ -235,12 +237,12 @@ int main(int argc, char** argv) {
     std::vector<int> tokens(1);
     bool is_broke = false;
     
-    std::vector<float> n_layer_cross_k(encoder.GetOutputSize(0) / sizeof(float));
-    std::vector<float> n_layer_cross_v(encoder.GetOutputSize(1) / sizeof(float));
+    std::vector<float> n_layer_cross_k(encoder->get_output_size(0) / sizeof(float));
+    std::vector<float> n_layer_cross_v(encoder->get_output_size(1) / sizeof(float));
 
     std::vector<float> decoder_main_logits(4 * WHISPER_VOCAB_SIZE);
-    std::vector<float> n_layer_self_k_cache(decoder_main.GetOutputSize(1) / sizeof(float));
-    std::vector<float> n_layer_self_v_cache(decoder_main.GetOutputSize(2) / sizeof(float));
+    std::vector<float> n_layer_self_k_cache(decoder_main->get_output_size(1) / sizeof(float));
+    std::vector<float> n_layer_self_v_cache(decoder_main->get_output_size(2) / sizeof(float));
 
     // encoder
     std::vector<float> continous_mel(WHISPER_N_MELS * n_len);
@@ -248,14 +250,13 @@ int main(int argc, char** argv) {
         memcpy(continous_mel.data() + i * n_len, mel[i].data(), sizeof(float) * n_len);
     }
 
-    encoder.SetInput(continous_mel.data(), 0);
-    ret = encoder.Run();
-    if (ret) {
+    axclrtMemcpy(encoder->get_input_pointer(0), continous_mel.data(), sizeof(float) * continous_mel.size(), AXCL_MEMCPY_HOST_TO_DEVICE);
+    if (!encoder->run(false)) {
         printf("encoder run failed!\n");
-        return ret;
+        return -1;
     }
-    encoder.GetOutput(n_layer_cross_k.data(), 0);
-    encoder.GetOutput(n_layer_cross_v.data(), 1);
+    axclrtMemcpy(n_layer_cross_k.data(), encoder->get_output_pointer(0), sizeof(float) * n_layer_cross_k.size(), AXCL_MEMCPY_DEVICE_TO_HOST);
+    axclrtMemcpy(n_layer_cross_v.data(), encoder->get_output_pointer(1), sizeof(float) * n_layer_cross_v.size(), AXCL_MEMCPY_DEVICE_TO_HOST);
 
     // fp = fopen("n_layer_cross_k.bin", "wb");
     // fwrite(encoder_data.n_layer_cross_k.data(), sizeof(float), encoder_data.n_layer_cross_k.size(), fp);
@@ -270,17 +271,16 @@ int main(int argc, char** argv) {
 
     // decoder_main
     start = clock();
-    decoder_main.SetInput(SOT_SEQUENCE.data(), 0);
-    decoder_main.SetInput(n_layer_cross_k.data(), 1);
-    decoder_main.SetInput(n_layer_cross_v.data(), 2);
-    ret = decoder_main.Run();
-    if (ret) {
+    axclrtMemcpy(decoder_main->get_input_pointer(0), SOT_SEQUENCE.data(), sizeof(int) * SOT_SEQUENCE.size(), AXCL_MEMCPY_HOST_TO_DEVICE);
+    axclrtMemcpy(decoder_main->get_input_pointer(1), n_layer_cross_k.data(), sizeof(float) * n_layer_cross_k.size(), AXCL_MEMCPY_HOST_TO_DEVICE);
+    axclrtMemcpy(decoder_main->get_input_pointer(2), n_layer_cross_v.data(), sizeof(float) * n_layer_cross_v.size(), AXCL_MEMCPY_HOST_TO_DEVICE);
+    if (!decoder_main->run(false)) {
         printf("decoder_main run failed!\n");
-        return ret;
+        return -1;
     }
-    decoder_main.GetOutput(decoder_main_logits.data(), 0);
-    decoder_main.GetOutput(n_layer_self_k_cache.data(), 1);
-    decoder_main.GetOutput(n_layer_self_v_cache.data(), 2);
+    axclrtMemcpy(decoder_main_logits.data(), decoder_main->get_output_pointer(0), sizeof(float) * decoder_main_logits.size(), AXCL_MEMCPY_DEVICE_TO_HOST);
+    axclrtMemcpy(n_layer_self_k_cache.data(), decoder_main->get_output_pointer(1), sizeof(float) * n_layer_self_k_cache.size(), AXCL_MEMCPY_DEVICE_TO_HOST);
+    axclrtMemcpy(n_layer_self_v_cache.data(), decoder_main->get_output_pointer(2), sizeof(float) * n_layer_self_v_cache.size(), AXCL_MEMCPY_DEVICE_TO_HOST);
     end = clock();
 
     offset += SOT_SEQUENCE.size();
@@ -303,8 +303,8 @@ int main(int argc, char** argv) {
     // fp = fopen("logits.bin", "wb");
     // fwrite(logits.data(), sizeof(float), logits.size(), fp);
     // fclose(fp);
-    decoder_loop.SetInput(n_layer_self_k_cache.data(), 1);
-    decoder_loop.SetInput(n_layer_self_v_cache.data(), 2);
+    axclrtMemcpy(decoder_loop->get_input_pointer(1), n_layer_self_k_cache.data(), sizeof(float) * n_layer_self_k_cache.size(), AXCL_MEMCPY_HOST_TO_DEVICE);
+    axclrtMemcpy(decoder_loop->get_input_pointer(2), n_layer_self_k_cache.data(), sizeof(float) * n_layer_self_k_cache.size(), AXCL_MEMCPY_HOST_TO_DEVICE);
 
     for (int i = 0; i < WHISPER_N_TEXT_CTX - SOT_SEQUENCE.size(); i++) {
         if (max_token_id == WHISPER_EOT) {
@@ -318,22 +318,22 @@ int main(int argc, char** argv) {
        
         // inference
         start = clock();
-        decoder_loop.SetInput(tokens.data(), 0);
-        decoder_loop.SetInput(n_layer_cross_k.data(), 3);
-        decoder_loop.SetInput(n_layer_cross_v.data(), 4);
-        decoder_loop.SetInput(positional_embedding.data() + offset * WHISPER_N_TEXT_STATE, 5);
-        decoder_loop.SetInput(mask.data(), 6);
+        axclrtMemcpy(decoder_loop->get_input_pointer(0), tokens.data(), sizeof(int) * tokens.size(), AXCL_MEMCPY_HOST_TO_DEVICE);
+        axclrtMemcpy(decoder_loop->get_input_pointer(3), n_layer_cross_k.data(), sizeof(float) * n_layer_cross_k.size(), AXCL_MEMCPY_HOST_TO_DEVICE);
+        axclrtMemcpy(decoder_loop->get_input_pointer(4), n_layer_cross_v.data(), sizeof(float) * n_layer_cross_v.size(), AXCL_MEMCPY_HOST_TO_DEVICE);
+        axclrtMemcpy(decoder_loop->get_input_pointer(5), positional_embedding.data() + offset * WHISPER_N_TEXT_STATE, decoder_loop->get_input_size(5), AXCL_MEMCPY_HOST_TO_DEVICE);
+        axclrtMemcpy(decoder_loop->get_input_pointer(6), mask.data(), sizeof(float) * mask.size(), AXCL_MEMCPY_HOST_TO_DEVICE);
 
         // start = clock();
-        ret = decoder_loop.Run();
-        if (ret) {
+        if (!decoder_loop->run(false)) {
             printf("decoder_loop run failed!\n");
-            return ret;
+            return -1;
         } 
 
-        decoder_loop.SetInput(decoder_loop.GetOutputPtr(1), 1);
-        decoder_loop.SetInput(decoder_loop.GetOutputPtr(2), 2);
-        decoder_loop.GetOutput(logits.data(), 0);
+        axclrtMemcpy(decoder_loop->get_input_pointer(1), n_layer_self_k_cache.data(), sizeof(float) * n_layer_self_k_cache.size(), AXCL_MEMCPY_HOST_TO_DEVICE);
+        axclrtMemcpy(decoder_loop->get_input_pointer(2), n_layer_self_k_cache.data(), sizeof(float) * n_layer_self_k_cache.size(), AXCL_MEMCPY_HOST_TO_DEVICE);
+        // get logits output
+        axclrtMemcpy(logits.data(), decoder_loop->get_output_pointer(0), sizeof(float) * logits.size(), AXCL_MEMCPY_DEVICE_TO_HOST);
 
         offset += 1;
         mask[WHISPER_N_TEXT_CTX - offset - 1] = 0;
@@ -359,11 +359,15 @@ int main(int argc, char** argv) {
         base64_decode((const uint8*)token_tables[i].c_str(), (uint32)token_tables[i].size(), str);
         s += str;
     }
-    printf("Result: %s\n", s.c_str());
 
-    // const opencc::SimpleConverter converter("t2s.json");
-    // std::string simple_str = converter.Convert(s);
-    // printf("Result: %s\n", simple_str.c_str());
+    if (language == "en") {
+        printf("Result: %s\n", s.c_str());
+    }
+    else {
+        const opencc::SimpleConverter converter("t2s.json");
+        std::string simple_str = converter.Convert(s);
+        printf("Result: %s\n", simple_str.c_str());
+    }
 
     return 0;
 }

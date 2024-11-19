@@ -52,4 +52,6 @@ private:
     struct impl;
     impl *impl_;
 };
+
+}
 #endif

@@ -1,3 +1,4 @@
 add_definitions(-DENV_AXCL_RUNTIME_API_ENABLE)
+add_definitions(-DENV_AXCL_NATIVE_API_ENABLE)
 add_definitions(-DENV_HAS_STD_FILESYSTEM)
 add_definitions(-DENV_HAS_POSIX_FILE_STAT)

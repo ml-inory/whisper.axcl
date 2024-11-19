@@ -14,6 +14,10 @@ aux_source_directory(${CMAKE_SOURCE_DIR}/src/utilities SRCS)
 add_executable(${PROJECT_NAME} main.cpp ${SRCS})
 target_link_libraries(${PROJECT_NAME} ${AXCL_LIBS} ${OPENCC_LIBS})
 
+file(COPY ${CMAKE_SOURCE_DIR}/3rdparty/opencc/share/opencc/t2s.json DESTINATION ${CMAKE_INSTALL_PREFIX})
+file(COPY ${CMAKE_SOURCE_DIR}/3rdparty/opencc/share/opencc/TSPhrases.ocd2 DESTINATION ${CMAKE_INSTALL_PREFIX})
+file(COPY ${CMAKE_SOURCE_DIR}/3rdparty/opencc/share/opencc/TSCharacters.ocd2 DESTINATION ${CMAKE_INSTALL_PREFIX})
+
 install(TARGETS ${PROJECT_NAME}
         RUNTIME
             DESTINATION ./)

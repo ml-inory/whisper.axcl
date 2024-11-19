@@ -12,6 +12,7 @@ list (APPEND AXCL_LIBS
 axcl_rt
 axcl_pkg
 axcl_comm
+axcl_npu
 spdlog
 axcl_token
 axcl_pcie_msg
