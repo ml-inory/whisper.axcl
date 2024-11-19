@@ -5,7 +5,6 @@ set(CMAKE_CXX_STANDARD 17)
 
 if (CMAKE_BUILD_TYPE MATCHES Debug)
     set(CMAKE_CXX_FLAGS "-fvisibility=hidden -g -O0")
-    add_definitions(-D__AX_SKEL_DEBUG__)
 elseif (CMAKE_BUILD_TYPE MATCHES Release)
     set(CMAKE_CXX_FLAGS "-fvisibility=hidden -O2 -fdata-sections -ffunction-sections")
 endif()
