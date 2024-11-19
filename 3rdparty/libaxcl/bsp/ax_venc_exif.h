@@ -1,0 +1,273 @@
+/**************************************************************************************************
+ *
+ * Copyright (c) 2019-2024 Axera Semiconductor Co., Ltd. All Rights Reserved.
+ *
+ * This source file is the property of Axera Semiconductor Co., Ltd. and
+ * may not be copied or distributed in any isomorphic form without the prior
+ * written consent of Axera Semiconductor Co., Ltd.
+ *
+ **************************************************************************************************/
+
+#ifndef __AX_VENC_EXIF_H__
+#define __AX_VENC_EXIF_H__
+
+#include "ax_global_type.h"
+
+#ifdef __cplusplus
+#if __cplusplus
+extern "C" {
+#endif
+#endif /* __cplusplus */
+
+#define MAX_JENC_EXIF_IMAGE_DESC_LEN     (128)
+#define MAX_JENC_EXIF_MAKE_LEN           (32)
+#define MAX_JENC_EXIF_MODEL_LEN          (32)
+#define MAX_JENC_EXIF_SOFTWARE_LEN       (32)
+#define MAX_JENC_EXIF_DATETIME_LEN       (20)
+#define MAX_JENC_EXIF_WHITE_POINT_LEN    (2)
+#define MAX_JENC_EXIF_PRIMARY_CHROMATICITY_LEN    (6)
+#define MAX_JENX_EXIF_YCBCR_COEFFICIENTS_LEN      (3)
+#define MAX_JENC_EXIF_REFERENCE_BLACK_WHITE_LEN   (6)
+#define MAX_JENC_EXIF_VERSION_LEN                 (4)
+#define MAX_JENC_EXIF_COMPONENTS_CONFIG_LEN       (4)
+#define MAX_JENC_EXIF_GPS_TIME_STAMP_LEN          (3)
+#define MAX_JENC_EXIF_GPS_SATELLITES_LEN          (64)
+#define MAX_JENC_EXIF_GPS_MAP_DATUM_LEN           (12)
+#define MAX_JENC_EXIF_GPS_PROCESSING_METHOD_LEN   (64)
+#define MAX_JENC_EXIF_GPS_AREA_INFORMATION_LEN    (64)
+#define MAX_JENC_EXIF_GPS_DATE_STAMP_LEN          (10)
+
+typedef enum {
+    AX_VENC_EXIF_ORIENTATION_NONE,
+    AX_VENC_EXIF_ORIENTATION_DEFAULT = 1,
+    AX_VENC_EXIF_ORIENTATION_FLIP_HORIZONTAL = 2,
+    AX_VENC_EXIF_ORIENTATION_ROTATE_180 = 3,
+    AX_VENC_EXIF_ORIENTATION_FLIP_VERTICAL = 4,
+    AX_VENC_EXIF_ORIENTATION_TRANSPOSE = 5,
+    AX_VENC_EXIF_ORIENTATION_ROTATE_90_CLOCKWISE = 6,
+    AX_VENC_EXIF_ORIENTATION_TRANSVERSE = 7,
+    AX_VENC_EXIF_ORIENTATION_ROTATE_270_CLOCKWISE = 8
+} AX_VENC_EXIF_ORIENTATION_E;
+
+typedef enum {
+    AX_VENC_EXIF_RES_UNIT_NONE,
+    AX_VENC_EXIF_RES_UNIT_UNKNOWN = 1,
+    AX_VENC_EXIF_RES_UNIT_INCHES = 2,
+    AX_VENC_EXIF_RES_UNIT_CENTIMETERS = 3
+} AX_VENC_EXIF_RES_UNIT_E;
+
+typedef enum {
+    AX_VENC_EXIF_YCBCR_POSITIONING_NONE = 0,
+    AX_VENC_EXIF_YCBCR_POSITIONING_CENTERED = 1,
+    AX_VENC_EXIF_YCBCR_POSITIONING_COSITED = 2
+} AX_VENC_EXIF_YCBCR_POSITIONING_E;
+
+typedef enum
+{
+    AX_VENC_EXIF_EXPOSURE_PROGRAM_NONE = 0,
+    AX_VENC_EXIF_EXPOSURE_PROGRAM_MANUAL,
+    AX_VENC_EXIF_EXPOSURE_PROGRAM_NORMAL,
+    AX_VENC_EXIF_EXPOSURE_PROGRAM_APERTURE_PRIORITY,
+    AX_VENC_EXIF_EXPOSURE_PROGRAM_SHUTTER_PRIORITY = 4,
+    AX_VENC_EXIF_EXPOSURE_PROGRAM_CREATIVE,
+    AX_VENC_EXIF_EXPOSURE_PROGRAM_ACTION,
+    AX_VENC_EXIF_EXPOSURE_PROGRAM_PORTRAIT,
+    AX_VENC_EXIF_EXPOSURE_PROGRAM_LANDSCAPE,
+} AX_VENC_EXIF_EXPOSURE_PROGRAM_E;
+
+typedef enum
+{
+    AX_VENC_EXIF_COLOR_SPACE_NONE = 0,
+    AX_VENC_EXIF_COLOR_SPACE_SRGB,
+    AX_VENC_EXIF_COLOR_SPACE_UNCALIBRATED = 65535,
+} AX_VENC_EXIF_COLOR_SPACE_E;
+
+typedef enum
+{
+    AX_VENC_EXIF_METERING_MODE_NONE = 0,
+    AX_VENC_EXIF_METERING_MODE_UNKNOWN,
+    AX_VENC_EXIF_METERING_MODE_AVERAGE,
+    AX_VENC_EXIF_METERING_MODE_CENTER_WEIGHTED,
+    AX_VENC_EXIF_METERING_MODE_SPOT,
+    AX_VENC_EXIF_METERING_MODE_MULTI_SPOT,
+    AX_VENC_EXIF_METERING_MODE_OTHER = 255,
+} AX_VENC_EXIF_METERING_MODE_E;
+
+typedef enum
+{
+    AX_VENC_EXIF_FLASH_NONE = 0,
+    AX_VENC_EXIF_FLASH_NOLIGHT = 1,
+    AX_VENC_EXIF_FLASH_FIRED = 2,
+    AX_VENC_EXIF_FLASH_FIRED_RETURN_LIGHT_NONE = 6,
+    AX_VENC_EXIF_FLASH_FIRED_RETURN_LIGHT = 8,
+} AX_VENC_EXIF_FLASH_E;
+
+typedef enum
+{
+    AX_VENC_EXIF_GPS_LATITUDE_REF_NONE = 0,
+    AX_VENC_EXIF_GPS_LATITUDE_REF_NORTH,
+    AX_VENC_EXIF_GPS_LATITUDE_REF_SOUTH,
+} AX_VENC_EXIF_GPS_LATITUDE_REF_E;
+
+typedef enum
+{
+    AX_VENC_EXIF_GPS_LONGITUDE_REF_NONE = 0,
+    AX_VENC_EXIF_GPS_LONGITUDE_REF_EAST,
+    AX_VENC_EXIF_GPS_LONGITUDE_REF_WEST,
+} AX_VENC_EXIF_GPS_LONGITUDE_REF_E;
+
+typedef enum
+{
+    AX_VENC_EXIF_GPS_ALTITUDE_REF_NONE = 0,
+    AX_VENC_EXIF_GPS_ALTITUDE_REF_ABOVE_SEA_LEVEL,
+    AX_VENC_EXIF_GPS_ALTITUDE_REF_BELOW_SEA_LEVEL,
+} AX_VENC_EXIF_GPS_ALTITUDE_REF_E;
+
+typedef enum
+{
+    AX_VENC_EXIF_GPS_SPEED_REF_NONE = 0,
+    AX_VENC_EXIF_GPS_SPEED_REF_KILOMETERS_PER_HOUR,
+    AX_VENC_EXIF_GPS_SPEED_REF_MILES_PER_HOUR,
+    AX_VENC_EXIF_GPS_SPEED_REF_KNOTS,
+} AX_VENC_EXIF_GPS_SPEED_REF_E;
+
+typedef enum
+{
+    AX_VENC_EXIF_GPS_STATUS_NONE = 0,
+    AX_VENC_EXIF_GPS_STATUS_VOID,
+    AX_VENC_EXIF_GPS_STATUS_ACTIVE,
+} AX_VENC_EXIF_GPS_STATUS_E;
+
+typedef enum
+{
+    AX_VENC_EXIF_GPS_MEASURE_MODE_NONE = 0,
+    AX_VENC_EXIF_GPS_MEASURE_MODE_2D = 2,
+    AX_VENC_EXIF_GPS_MEASURE_MODE_3D = 3,
+} AX_VENC_EXIF_GPS_MEASURE_MODE_E;
+
+typedef enum
+{
+    AX_VENC_EXIF_GPS_DISTANCE_REF_NONE = 0,
+    AX_VENC_EXIF_GPS_DISTANCE_REF_KILOMETERS,
+    AX_VENC_EXIF_GPS_DISTANCE_REF_METERS,
+    AX_VENC_EXIF_GPS_DISTANCE_REF_NAUTICAL_MILES,
+} AX_VENC_EXIF_GPS_DISTANCE_REF_E;
+
+typedef enum
+{
+    AX_VENC_EXIF_GPS_DIFFERENTIAL_NONE = 0,
+    AX_VENC_EXIF_GPS_DIFFERENTIAL_NOT_APPLIED,
+    AX_VENC_EXIF_GPS_DIFFERENTIAL_APPLIED,
+} AX_VENC_EXIF_GPS_DIFFERENTIAL_E;
+
+typedef enum
+{
+    AX_VENC_EXIF_GPS_NORTH_REF_NONE = 0,
+    AX_VENC_EXIF_GPS_NORTH_REF_TRUE,
+    AX_VENC_EXIF_GPS_NORTH_REF_MAGNETIC,
+} AX_VENC_EXIF_GPS_NORTH_REF_E;
+
+typedef struct axVENC_EXIF_IFD0_INFO_T
+{
+    /* IFD0, main image info. */
+    AX_U8  u8ImageDescription[MAX_JENC_EXIF_IMAGE_DESC_LEN];
+    AX_U8  u8Make[MAX_JENC_EXIF_MAKE_LEN];
+    AX_U8  u8Model[MAX_JENC_EXIF_MODEL_LEN];
+    AX_VENC_EXIF_ORIENTATION_E enOrientation;
+    AX_U32 u32XResolution; /* default: 72 / 1 */
+    AX_U32 u32YResolution; /* default: 72 / 1 */
+    AX_VENC_EXIF_RES_UNIT_E enResolutionUnit;
+    AX_U8  u8Software[MAX_JENC_EXIF_SOFTWARE_LEN];
+    AX_U8  u8DateTime[MAX_JENC_EXIF_DATETIME_LEN];
+    AX_U32 u32WhitePoint[MAX_JENC_EXIF_WHITE_POINT_LEN];
+    AX_U32 u32PrimaryChromaticities[MAX_JENC_EXIF_PRIMARY_CHROMATICITY_LEN];
+    AX_F32 f32YCbCrCoefficients[MAX_JENX_EXIF_YCBCR_COEFFICIENTS_LEN];
+    AX_VENC_EXIF_YCBCR_POSITIONING_E enYCbCrPositioning;
+    AX_U16 u16ReferenceBlackWhite[MAX_JENC_EXIF_REFERENCE_BLACK_WHITE_LEN];
+} AX_VENC_EXIF_IFD0_INFO_T;
+
+typedef struct axVENC_EXIF_SUBIFD_INFO_T
+{
+    /* SubIfFD info. */
+    AX_U32 u32EposureTime; /* denominator value.*/
+    AX_F32 f32FNumber;
+    AX_VENC_EXIF_EXPOSURE_PROGRAM_E enExposureProgram;
+    AX_U16 u16ISOSpeedRatings;
+    AX_U8  u8ExifVersion[MAX_JENC_EXIF_VERSION_LEN];
+    AX_U8  u8DateTimeOriginal[MAX_JENC_EXIF_DATETIME_LEN];
+    AX_U8  u8DateTimeDigitized[MAX_JENC_EXIF_DATETIME_LEN];
+    AX_U8  u8ComponentsConfiguration[MAX_JENC_EXIF_COMPONENTS_CONFIG_LEN];
+    AX_F32 f32CompressedBitsPerPixel;
+    AX_U16 u16ShutterSpeedValue; /* APEX, 2^n .*/
+    AX_U16 u16ApertureValue; /* 2^ (n / 2) */
+    AX_F32 f32BrightnessValue;
+    AX_F32 f32ExposureBiasValue;
+    AX_U16 u16MaxApertureValue; /* 2^ (n / 2) */
+    AX_U16 u16SubjectDistance;  /* meter unit */
+    AX_VENC_EXIF_METERING_MODE_E enMeteringMode;
+    AX_U16 u16LightSource;
+    AX_VENC_EXIF_FLASH_E enFlash;
+    AX_F32 f32FocalLength; /* mm unit */
+    AX_U16 u16SubsecTime; /* [0, 999] */
+    AX_U16 u16SubsecTimeOriginal; /* [0, 999] */
+    AX_U16 u16SubsecTimeDigitized; /* [0, 999] */
+    AX_U8  u8FlashpixVersion[MAX_JENC_EXIF_VERSION_LEN];
+    AX_VENC_EXIF_COLOR_SPACE_E enColorSpace;
+    AX_U32 u32ExifImageWidth;
+    AX_U32 u32ExifImageHeight;
+    AX_U32 u32FocalPlaneXResolution;
+    AX_U32 u32FocalPlaneYResolution;
+    AX_VENC_EXIF_RES_UNIT_E enFocalPlaneResolutionUnit;
+    AX_U16 u16SensingMethod;
+} AX_VENC_EXIF_SUBIFD_INFO_T;
+
+typedef struct axVENC_EXIF_GPS_INFO_T
+{
+    AX_U8  u8GpsVersionID[MAX_JENC_EXIF_VERSION_LEN];
+    AX_VENC_EXIF_GPS_LATITUDE_REF_E enGpsLatitudeRef;
+    AX_F32 f32GpsLatitude; /* [0, 90) */
+    AX_VENC_EXIF_GPS_LONGITUDE_REF_E enGpsLongitudeRef;
+    AX_F32 f32GpsLongitude; /* [0, 180) */
+    AX_VENC_EXIF_GPS_ALTITUDE_REF_E enGpsAltitudeRef;
+    AX_U32 u32GpsAltitude;
+    AX_U32 u32GpsTimeStamp[3];
+    AX_U8  u8GpsSatellites[MAX_JENC_EXIF_GPS_SATELLITES_LEN];
+    AX_VENC_EXIF_GPS_STATUS_E enGpsStatus;
+    AX_VENC_EXIF_GPS_MEASURE_MODE_E enGpsMeasureMode;
+    AX_F32 f32GpsDop;
+    AX_VENC_EXIF_GPS_SPEED_REF_E enGpsSpeedRef;
+    AX_F32 f32GpsSpeed;
+    AX_VENC_EXIF_GPS_NORTH_REF_E enGpsTrackRef;
+    AX_F32 f32GpsTrack; /* [0, 360) */
+    AX_VENC_EXIF_GPS_NORTH_REF_E enGpsImgDirectionRef;
+    AX_F32 f32GpsImgDirection; /* [0, 360) */
+    AX_U8  u8GpsMapDatum[MAX_JENC_EXIF_GPS_MAP_DATUM_LEN];
+    AX_VENC_EXIF_GPS_LATITUDE_REF_E enGpsDstLatitudeRef;
+    AX_F32 f32GpsDstLatitude; /* [0, 90) */
+    AX_VENC_EXIF_GPS_LONGITUDE_REF_E enGpsDstLongitudeRef;
+    AX_F32 f32GpsDstLongitude; /* [0, 180) */
+    AX_VENC_EXIF_GPS_NORTH_REF_E enGpsDstBearingRef;
+    AX_F32 f32GpsDstBearing; /* [0, 360) */
+    AX_VENC_EXIF_GPS_DISTANCE_REF_E enGpsDstDistanceRef;
+    AX_F32 f32GpsDstDistance;
+    AX_U8  u8GpsProcessingMethod[MAX_JENC_EXIF_GPS_PROCESSING_METHOD_LEN];
+    AX_U8  u8GpsAreaInformation[MAX_JENC_EXIF_GPS_AREA_INFORMATION_LEN];
+    AX_U8  u8GpsDateStamp[100]; /* one byte for '\0' */
+    AX_VENC_EXIF_GPS_DIFFERENTIAL_E enGpsDifferential;
+    AX_F32 f32GpsHPositioningError;
+} AX_VENC_EXIF_GPS_INFO_T;
+typedef struct axVENC_EXIF_INFO_T
+{
+    AX_BOOL bExifEnable;
+    AX_VENC_EXIF_IFD0_INFO_T stExifIFD0Info;
+    AX_VENC_EXIF_SUBIFD_INFO_T stExifSubIFDInfo;
+    AX_VENC_EXIF_GPS_INFO_T stExifGpsInfo;
+} AX_USER_EXIF_INFO_T;
+
+#ifdef __cplusplus
+#if __cplusplus
+}
+#endif
+#endif /* __cplusplus */
+
+#endif /* __AX_VENC_EXIF_H__ */
