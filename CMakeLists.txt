@@ -27,7 +27,3 @@ file(COPY ${CMAKE_SOURCE_DIR}/3rdparty/opencc/share/opencc/TSCharacters.ocd2 DES
 install(TARGETS ${PROJECT_NAME}
         RUNTIME
             DESTINATION ./)
-set_target_properties(${PROJECT_NAME}
-    PROPERTIES
-    INSTALL_RPATH "$ORIGIN/../${AXCL_LIB_DIR}"
-) 
