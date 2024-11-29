@@ -21,6 +21,7 @@ add_executable(${PROJECT_NAME} main.cpp ${SRCS})
 target_link_libraries(${PROJECT_NAME} ${AXCL_LIBS} ${OPENCC_LIBS})
 
 include(ExternalProject)
+set(OPENCC_INSTALL_DIR ${CMAKE_SOURCE_DIR}/3rdparty/opencc/${CMAKE_SYSTEM_PROCESSOR})
 ExternalProject_Add(opencc
     GIT_REPOSITORY "https://github.com/ml-inory/OpenCC.git"
     GIT_TAG "axera"
