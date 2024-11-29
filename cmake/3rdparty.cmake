@@ -23,10 +23,3 @@ include_directories(3rdparty/audiofile)
 
 # librosa
 include_directories(3rdparty/librosa)
-
-# opencc
-include_directories(3rdparty/opencc/include)
-link_directories(3rdparty/opencc/lib)
-list (APPEND OPENCC_LIBS
-opencc
-marisa)
