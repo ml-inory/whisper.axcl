@@ -6,8 +6,8 @@ include_directories(3rdparty/libaxcl/bsp)
 
 # libaxcl
 if (CROSS_COMPILE)
-    include_directories(3rdparty/libaxcl/include)
-    set (AXCL_LIB_DIR 3rdparty/libaxcl/lib)
+    include_directories(${CMAKE_SOURCE_DIR}/3rdparty/libaxcl/include)
+    set (AXCL_LIB_DIR ${CMAKE_SOURCE_DIR}/3rdparty/libaxcl/lib)
 else()
     include_directories(/usr/include/axcl)
     set (AXCL_LIB_DIR /usr/lib/axcl)
