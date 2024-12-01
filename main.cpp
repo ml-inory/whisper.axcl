@@ -114,11 +114,11 @@ std::unique_ptr<middleware::runner> load_runner(const std::string& model_path) {
 
 int main(int argc, char** argv) {
     cmdline::parser cmd;
-    cmd.add<std::string>("encoder", 'e', "encoder axmodel", false, "../models/small-encoder.axmodel");
-    cmd.add<std::string>("decoder_main", 'm', "decoder_main axmodel", false, "../models/small-decoder-main.axmodel");
-    cmd.add<std::string>("decoder_loop", 'l', "decoder_loop axmodel", false, "../models/small-decoder-loop.axmodel");
-    cmd.add<std::string>("position_embedding", 'p', "position_embedding.bin", false, "../models/small-positional_embedding.bin");
-    cmd.add<std::string>("token", 't', "tokens txt", false, "../models/small-tokens.txt");
+    cmd.add<std::string>("encoder", 'e', "encoder axmodel", false, "./models/small-encoder.axmodel");
+    cmd.add<std::string>("decoder_main", 'm', "decoder_main axmodel", false, "./models/small-decoder-main.axmodel");
+    cmd.add<std::string>("decoder_loop", 'l', "decoder_loop axmodel", false, "./models/small-decoder-loop.axmodel");
+    cmd.add<std::string>("position_embedding", 'p', "position_embedding.bin", false, "./models/small-positional_embedding.bin");
+    cmd.add<std::string>("token", 't', "tokens txt", false, "./models/small-tokens.txt");
     cmd.add<std::string>("wav", 'w', "wav file", true, "");
     cmd.add<std::string>("model_type", 0, "tiny, small, large", false, "small");
     cmd.add<std::string>("language", 0, "en, zh", false, "zh");

@@ -41,13 +41,6 @@ add_dependencies(${PROJECT_NAME} opencc)
 target_link_libraries(${PROJECT_NAME} ${OPENCC_INSTALL_DIR}/lib/libopencc.a)
 target_link_libraries(${PROJECT_NAME} ${OPENCC_INSTALL_DIR}/lib/libmarisa.a)
 
-if (CROSS_COMPILE)
-    set_target_properties(${PROJECT_NAME}
-    PROPERTIES
-    LINK_FLAGS "-Wl,-rpath,$ORIGIN/../3rdparty/libaxcl/lib/"
-    )
-endif()    
-
 install(TARGETS ${PROJECT_NAME}
         RUNTIME
             DESTINATION ./)
