@@ -260,11 +260,16 @@ int main(int argc, char** argv) {
     // fread(continous_mel.data(), sizeof(float), continous_mel.size(), fp);
     // fclose(fp);
 
+    utilities::timer all_timer;
+    timer.start();
+    all_timer.start();
     axclrtMemcpy(encoder->get_input_pointer(0), continous_mel.data(), sizeof(float) * continous_mel.size(), AXCL_MEMCPY_HOST_TO_DEVICE);
     if (!encoder->run(false)) {
         printf("encoder run failed!\n");
         return -1;
     }
+    timer.stop();
+    printf("Encoder run take %.2f ms\n", timer.elapsed<utilities::timer::milliseconds>());
     // axclrtMemcpy(n_layer_cross_k.data(), encoder->get_output_pointer(0), sizeof(float) * n_layer_cross_k.size(), AXCL_MEMCPY_DEVICE_TO_HOST);
     // axclrtMemcpy(n_layer_cross_v.data(), encoder->get_output_pointer(1), sizeof(float) * n_layer_cross_v.size(), AXCL_MEMCPY_DEVICE_TO_HOST);
 
@@ -382,8 +387,10 @@ int main(int argc, char** argv) {
         printf("Next Token: %d \t take %.2f ms\n", max_token_id, token_timer.elapsed<utilities::timer::milliseconds>());
     }
     loop_timer.stop();
+    all_timer.stop();
     float loop_cost = loop_timer.elapsed<utilities::timer::milliseconds>() + first_token_cost;
     printf("All Token: take %.2fms, %.2f token/s \n", loop_cost, (loop_token_num + 1) * 1000.0f / loop_cost);
+    printf("All take %.2fms \n", all_timer.elapsed<utilities::timer::milliseconds>());
 
     std::string s;
     for (const auto i : results) {
