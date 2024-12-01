@@ -9,6 +9,8 @@ elseif (CMAKE_BUILD_TYPE MATCHES Release)
     set(CMAKE_CXX_FLAGS "-fvisibility=hidden -O2 -fdata-sections -ffunction-sections")
 endif()
 
+option(CROSS_COMPILE "Whether to cross compile" OFF)
+
 include(cmake/3rdparty.cmake)
 include(cmake/options.cmake)
 

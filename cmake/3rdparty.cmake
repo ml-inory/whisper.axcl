@@ -5,8 +5,13 @@ include_directories(3rdparty/cmdline/include)
 include_directories(3rdparty/libaxcl/bsp)
 
 # libaxcl
-include_directories(/usr/include/axcl)
-set (AXCL_LIB_DIR /usr/lib/axcl)
+if (CROSS_COMPILE)
+    include_directories(3rdparty/libaxcl/include)
+    set (AXCL_LIB_DIR 3rdparty/libaxcl/lib)
+else()
+    include_directories(/usr/include/axcl)
+    set (AXCL_LIB_DIR /usr/lib/axcl)
+endif()
 link_directories (${AXCL_LIB_DIR})
 list (APPEND AXCL_LIBS 
 axcl_rt
